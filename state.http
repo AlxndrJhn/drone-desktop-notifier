@@ -1,2 +1,0 @@
-GET https://drone.fedger.io/api/repos/fedger/menu-service/builds
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZXh0IjoiQWx4bmRySmhuIiwidHlwZSI6InVzZXIifQ.GhcOfd4Ahkt07bBteER3Sy71O0SH4jfZXOQqF2wDncU
