@@ -10,6 +10,12 @@ Use the package manager [pip](https://pip.pypa.io/en/stable/) to install dronede
 pip install dronedesktopnotifier
 ```
 
+- For mac and balloon notifications, install `terminal-notifier`
+
+```bash
+brew install terminal-notifier
+```
+
 ## Usage
 
 - Format
