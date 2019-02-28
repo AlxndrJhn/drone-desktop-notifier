@@ -36,7 +36,7 @@ class Build:
     def __init__(self, *initial_data, **kwargs):
         for dictionary in initial_data:
             for key in dictionary:
-                if key == 'status':
+                if key == "status":
                     value = Build.state[dictionary[key]]
                 else:
                     value = dictionary[key]
@@ -46,9 +46,9 @@ class Build:
             setattr(self, key, kwargs[key])
 
     def __eq__(self, value):
-        if value is None or getattr(self, 'id') == None:
+        if value is None or getattr(self, "id") == None:
             return False
-        return getattr(self, 'id') == value.id
+        return getattr(self, "id") == value.id
 
 
 def get_time():
@@ -62,23 +62,23 @@ def notify(build: Build, link: str, balloon: bool, terminal_unicode: bool, termi
     icon = None
     if build.status == Build.state.failure:
         icon = f"{__package__}\icons\state_failed.ico"
-        symbol = u'❌'
-        color = 'red'
+        symbol = "❌"
+        color = "red"
     elif build.status == Build.state.running:
         icon = f"{__package__}\icons\state_running.ico"
-        symbol = u'🔄'
-        color = 'blue'
+        symbol = "🔄"
+        color = "blue"
     elif build.status == Build.state.success:
         icon = f"{__package__}\icons\state_ok.ico"
-        symbol = u'✅'
-        color = 'green'
+        symbol = "✅"
+        color = "green"
     else:
         return
 
     if terminal_unicode:
         s = symbol
     else:
-        s = ''
+        s = ""
 
     timestamp = get_time()
     text = f"{timestamp} {s}  `{build.status.name}` {link}{build.number} `{build.message}` {build.link_url} ({build.author})"
@@ -93,14 +93,10 @@ def notify(build: Build, link: str, balloon: bool, terminal_unicode: bool, termi
     if not balloon:
         return
 
-    if platform.system() == 'Darwin':
-        notify_mac(title=f"{build.status.name} ",
-                   message=f"{build.message} ({build.author})", link=f"{link}{build.number}", icon=icon)
-    elif platform.system() == 'Windows':
-        notification.notify(
-            message=f'{symbol} {build.status.name} `{build.message}` ({build.author})',
-            app_icon=icon
-        )
+    if platform.system() == "Darwin":
+        notify_mac(title=f"{build.status.name} ", message=f"{build.message} ({build.author})", link=f"{link}{build.number}", icon=icon)
+    elif platform.system() == "Windows":
+        notification.notify(message=f"{symbol} {build.status.name} `{build.message}` ({build.author})", app_icon=icon)
 
 
 def validate_names(ctx, name, value):
@@ -108,11 +104,11 @@ def validate_names(ctx, name, value):
 
     names = value.strip().split()
     if any(len(n) == 0 for n in names):
-        raise click.BadParameter(f'empty name(s) {names}')
+        raise click.BadParameter(f"empty name(s) {names}")
 
     for n in names:
         if r.match(n) == None:
-            raise click.BadParameter(f'invalid name `{n}`')
+            raise click.BadParameter(f"invalid name `{n}`")
 
     return names
 
@@ -120,11 +116,11 @@ def validate_names(ctx, name, value):
 def validate_url(ctx, name, base_url):
     base_url = base_url.strip()
     if not validators.url(base_url):
-        raise click.BadParameter(f'invalid url {base_url}')
-    if base_url.endswith('/'):
+        raise click.BadParameter(f"invalid url {base_url}")
+    if base_url.endswith("/"):
         base_url = base_url[:-1]
     split = urllib.parse.urlsplit(base_url)
-    link = split[0]+'://'+split[1]+'/'+'/'.join(split.path.split('/')[3:])+'/'
+    link = split[0] + "://" + split[1] + "/" + "/".join(split.path.split("/")[3:]) + "/"
     return base_url, link
 
 
@@ -132,20 +128,20 @@ def validate_drone_api(ctx, name, value):
     value = value.strip()
     regex = re.compile(r"^[a-zA-Z0-9]{36}\.[a-zA-Z0-9]{46}\.[a-zA-Z0-9]{43}$")
     if regex.match(value) is None:
-        raise click.BadParameter(f'drone token is not valid {value}')
+        raise click.BadParameter(f"drone token is not valid {value}")
 
     return value
 
 
 @click.command()
-@click.option('--names', '-n', callback=validate_names, help="space delimited list of GitHub-account names that trigger the notification")
-@click.option('--balloon/--no-balloon', default=True, help="if not set, no desktop notification is displayed")
-@click.option('--delay', '-d', default=2, show_default=True, help="delay between updates")
-@click.option('--delay', '-d', default=2, show_default=True, help="delay between updates")
-@click.option('--terminal-unicode/--no-terminal-unicode', default=True, help="if set, unicode symbols will be used in the terminal output")
-@click.option('--terminal-color/--no-terminal-color', default=True, help="if set, terminal output is colorful")
-@click.argument('url', callback=validate_url)
-@click.argument('drone-api-token', callback=validate_drone_api)
+@click.option("--names", "-n", callback=validate_names, help="space delimited list of GitHub-account names that trigger the notification")
+@click.option("--balloon/--no-balloon", default=True, help="if not set, no desktop notification is displayed")
+@click.option("--delay", "-d", default=2, show_default=True, help="delay between updates")
+@click.option("--delay", "-d", default=2, show_default=True, help="delay between updates")
+@click.option("--terminal-unicode/--no-terminal-unicode", default=True, help="if set, unicode symbols will be used in the terminal output")
+@click.option("--terminal-color/--no-terminal-color", default=True, help="if set, terminal output is colorful")
+@click.argument("url", callback=validate_url)
+@click.argument("drone-api-token", callback=validate_drone_api)
 def drone_notifier(names, url, drone_api_token, balloon, delay, terminal_unicode, terminal_color):
     base_url, link = url
 
@@ -171,7 +167,7 @@ def drone_notifier(names, url, drone_api_token, balloon, delay, terminal_unicode
                 showed_text_error = True
                 text = f"{get_time()} failed to connect to  {base_url} : {e}"
                 if terminal_color:
-                    text = colored(text, 'red')
+                    text = colored(text, "red")
                 print(text)
             continue
 
@@ -180,7 +176,7 @@ def drone_notifier(names, url, drone_api_token, balloon, delay, terminal_unicode
                 showed_text_error = True
                 text = f"{get_time()} error code #{r.status_code} from drone api: {r.reason}"
                 if terminal_color:
-                    text = colored(text, 'red')
+                    text = colored(text, "red")
                 print(text)
             continue
 
@@ -189,22 +185,20 @@ def drone_notifier(names, url, drone_api_token, balloon, delay, terminal_unicode
         except:
             continue
 
-        all_builds = [Build(b)
-                      for b in builds]
+        all_builds = [Build(b) for b in builds]
         my_builds: List[Build] = [b for b in all_builds if b.author in names]
 
         if not showed_text_success:
             showed_text_success = True
             text = f"{get_time()} got information for {len(builds)} builds from {base_url}, {len(my_builds)} are related to {names}"
             if terminal_color:
-                text = colored(text, 'green')
+                text = colored(text, "green")
             print(text)
 
         # detect new elements that are pending or running
         for new_build in my_builds:
             if new_build not in old_my_builds and new_build.status in [Build.state.pending, Build.state.running]:
-                notify(new_build, link, balloon,
-                       terminal_unicode, terminal_color)
+                notify(new_build, link, balloon, terminal_unicode, terminal_color)
 
         # detect status change
         for old_build in old_my_builds:
@@ -212,8 +206,7 @@ def drone_notifier(names, url, drone_api_token, balloon, delay, terminal_unicode
                 continue
             new_build = my_builds[my_builds.index(old_build)]
             if new_build.status != old_build.status:
-                notify(new_build, link, balloon,
-                       terminal_unicode, terminal_color)
+                notify(new_build, link, balloon, terminal_unicode, terminal_color)
 
         old_my_builds = my_builds
 
