@@ -18,7 +18,7 @@ setup(
     keywords=["drone.io", "notification", "drone", "notifier"],
     install_requires=["requests", "urllib3", "termcolor", "validators", "click", "plyer"],
     classifiers=[
-        "Development Status :: 3 - Beta",
+        "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",
         "Topic :: Utilities",
         "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
