@@ -6,14 +6,14 @@ import time
 import urllib
 from enum import Enum
 from typing import List
-from termcolor import colored
 
 import click
 import requests
 import validators
 from plyer import notification
+from termcolor import colored
 
-from dronedesktopnotifier.requests_retry import requests_retry_session
+from .requests_retry import requests_retry_session
 
 
 def notify_mac(title, message, link, icon):
@@ -100,6 +100,9 @@ def notify(build: Build, link: str, balloon: bool, terminal_unicode: bool, termi
 
 
 def validate_names(ctx, name, value):
+    if value is None:
+        return None
+
     r = re.compile(r"^[a-z\d](?:[a-z\d]|-(?=[a-z\d])){0,38}$", re.IGNORECASE)
 
     names = value.strip().split()
@@ -186,11 +189,15 @@ def drone_notifier(names, url, drone_api_token, balloon, delay, terminal_unicode
             continue
 
         all_builds = [Build(b) for b in builds]
-        my_builds: List[Build] = [b for b in all_builds if b.author in names]
+        my_builds: List[Build] = [b for b in all_builds if b.author in names] if names else all_builds
 
         if not showed_text_success:
             showed_text_success = True
-            text = f"{get_time()} got information for {len(builds)} builds from {base_url}, {len(my_builds)} are related to {names}"
+            if names:
+                names_segment = f", {len(my_builds)} are related to {names}"
+            else:
+                names_segment = ", triggering on all builds (consinder the --names option)"
+            text = f"{get_time()} got information for {len(builds)} builds from {base_url}{names_segment}"
             if terminal_color:
                 text = colored(text, "green")
             print(text)
