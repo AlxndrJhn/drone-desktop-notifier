@@ -140,7 +140,6 @@ def validate_drone_api(ctx, name, value):
 @click.option("--names", "-n", callback=validate_names, help="space delimited list of GitHub-account names that trigger the notification")
 @click.option("--balloon/--no-balloon", default=True, help="if not set, no desktop notification is displayed")
 @click.option("--delay", "-d", default=2, show_default=True, help="delay between updates")
-@click.option("--delay", "-d", default=2, show_default=True, help="delay between updates")
 @click.option("--terminal-unicode/--no-terminal-unicode", default=True, help="if set, unicode symbols will be used in the terminal output")
 @click.option("--terminal-color/--no-terminal-color", default=True, help="if set, terminal output is colorful")
 @click.argument("url", callback=validate_url)
