@@ -21,21 +21,20 @@ brew install terminal-notifier
 - Format
 
 ```bash
-python -m dronedesktopnotifier https://drone.<yourdomain>.com/api/repos/<repo owner>/<repo name> <drone.io access token> --names <your github username(s)>
+python -m dronedesktopnotifier https://drone.<yourdomain>.com/api <drone.io access token> --names <your github username(s)>
 ```
 
 - Example
 
 ```bash
-python -m dronedesktopnotifier https://drone.mycompany.io/api/repos/company/some-service jsgjijgjgojJGJISGJSGOSG.jtkjfjafkGSJGJOSGJOJSOGI.jksgoafjHGJAJGJKAGJ --names AlxndrJhn
+python -m dronedesktopnotifier https://drone.mycompany.io/api jsgjijgjgojJGJISGJSGOSG.jtkjfjafkGSJGJOSGJOJSOGI.jksgoafjHGJAJGJKAGJ --names AlxndrJhn
 ```
 
 ### Arguments
 
-- `url` this is the base url of the api of your `drone.ai` system, something like `https://drone.mycompany.io/api/repos/company/some-service`
+- `url` this is the base url of the api of your `drone.ai` system, something like `https://drone.mycompany.io/api`, it will get all active repositories automatically
 
 - `drone-api-token` is your personal token from your `drone.io` system. You can find it at something like `https://drone.mycompany.io/account/token`
---no-terminal-color
 
 ### Optional parameters
 
@@ -43,21 +42,26 @@ python -m dronedesktopnotifier https://drone.mycompany.io/api/repos/company/some
 list of space separated names (your GitHub name for example) that should trigger the notification, if not given, all builds will trigger the alarm.
 
 - `-d` or `--delay`
-delay in seconds (integer) between `drone.ai` api requests.
+delay in seconds (integer) between `drone.ai` api request batches.
 
-- `--balloon/--no-balloon` in case you only want the terminal notification, the balloon is on by default.
+- `--balloon/--no-balloon`
+in case you only want the terminal notification, the balloon is on by default.
 
-- `--terminal-unicode/--no-terminal-unicode` in case you only want the terminal notifications in ascii, unicode is used by default.
+- `--terminal-unicode/--no-terminal-unicode`
+in case you only want the terminal notifications in ascii, unicode is used by default.
 
-- `--terminal-color/--no-terminal-color` in case you want colors in your terminal (requires `termcolor` package. Colors are on by default.
+- `--terminal-color/--no-terminal-color`
+in case you want colors in your terminal (requires `termcolor` package. Colors are on by default.
 
 ## Output
 
 ### The terminal output
 
 ```bash
-Thu 14:08:15 got information for 50 builds from https://drone.mycompany.io/api/repos/company/some-service, 26 are related to ['AlxndrJhn']
-Thu 14:08:15 🔄  `running` https://drone.mycompany.io/company/menu-service/2506 `My pull request title` https://github.com/company/some-service/pull/23 (AlxndrJhn)
+Fri 12:08:59 Checking 14 repositories for activity (last 30 days)
+Fri 12:09:01 Active repositories found: ['mycompany/some-service', 'mycompany/some-ai', 'mycompany/labelstuff', 'mycompany/inspect_stuff', 'mycompany/cnn-stuff']
+Fri 12:09:02 got information for 250 builds from https://drone.mycompany.io/api, 48 are related to ['AlxndrJhn']
+Fri 12:09:02 🔄  `running` https://drone.mycompany.io/company/some-service/2506 `My pull request title` https://github.com/company/some-service/pull/23 (AlxndrJhn)
 ```
 
 There is one start-up message, it might be an error or as shown above, a success message.

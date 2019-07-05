@@ -55,7 +55,9 @@ def get_time():
     return datetime.datetime.now().strftime("%a %H:%M:%S")
 
 
-def notify(build: Build, link: str, balloon: bool, terminal_unicode: bool, terminal_color: bool) -> None:
+def notify(
+    build: Build, link: str, balloon: bool, terminal_unicode: bool, terminal_color: bool
+) -> None:
     if build is None:
         return
 
@@ -94,9 +96,17 @@ def notify(build: Build, link: str, balloon: bool, terminal_unicode: bool, termi
         return
 
     if platform.system() == "Darwin":
-        notify_mac(title=f"{build.status.name} ", message=f"{build.message} ({build.author})", link=f"{link}{build.number}", icon=icon)
+        notify_mac(
+            title=f"{build.status.name} ",
+            message=f"{build.message} ({build.author})",
+            link=f"{link}{build.number}",
+            icon=icon,
+        )
     elif platform.system() == "Windows":
-        notification.notify(message=f"{symbol} {build.status.name} `{build.message}` ({build.author})", app_icon=icon)
+        notification.notify(
+            message=f"{symbol} {build.status.name} `{build.message}` ({build.author})",
+            app_icon=icon,
+        )
 
 
 def validate_names(ctx, name, value):
@@ -107,7 +117,7 @@ def validate_names(ctx, name, value):
 
     names = value.strip().split()
     if any(len(n) == 0 for n in names):
-        raise click.BadParameter(f"empty name(s) {names}")
+        raise click.BadParameter(f"empty name(s) `{names}`")
 
     for n in names:
         if r.match(n) == None:
@@ -120,90 +130,174 @@ def validate_url(ctx, name, base_url):
     base_url = base_url.strip()
     if not validators.url(base_url):
         raise click.BadParameter(f"invalid url {base_url}")
-    if base_url.endswith("/"):
-        base_url = base_url[:-1]
-    split = urllib.parse.urlsplit(base_url)
-    link = split[0] + "://" + split[1] + "/" + "/".join(split.path.split("/")[3:]) + "/"
-    return base_url, link
+    base_url = base_url.strip("/")
+    if not base_url.lower().endswith("api"):
+        raise click.BadParameter(f"`{base_url}` must contain `api` at the end")
+    return base_url
 
 
 def validate_drone_api(ctx, name, value):
     value = value.strip()
-    regex = re.compile(r"^[a-zA-Z0-9]{36}\.[a-zA-Z0-9]{46}\.[a-zA-Z0-9]{43}$")
+    regex = re.compile(r"^[a-zA-Z0-9]{30,50}\.[a-zA-Z0-9]{30,50}\.[a-zA-Z0-9]{30,50}$")
     if regex.match(value) is None:
-        raise click.BadParameter(f"drone token is not valid {value}")
+        raise click.BadParameter(f"drone token is not valid `{value}`")
 
     return value
 
 
 @click.command()
-@click.option("--names", "-n", callback=validate_names, help="space delimited list of GitHub-account names that trigger the notification")
-@click.option("--balloon/--no-balloon", default=True, help="if not set, no desktop notification is displayed")
-@click.option("--delay", "-d", default=2, show_default=True, help="delay between updates")
-@click.option("--terminal-unicode/--no-terminal-unicode", default=True, help="if set, unicode symbols will be used in the terminal output")
-@click.option("--terminal-color/--no-terminal-color", default=True, help="if set, terminal output is colorful")
+@click.option(
+    "--names",
+    "-n",
+    callback=validate_names,
+    help="space delimited list of GitHub-account names that trigger the notification",
+)
+@click.option(
+    "--balloon/--no-balloon",
+    default=True,
+    help="if not set, no desktop notification is displayed",
+)
+@click.option(
+    "--delay", "-d", default=2, show_default=True, help="delay between updates"
+)
+@click.option(
+    "--terminal-unicode/--no-terminal-unicode",
+    default=True,
+    help="if set, unicode symbols will be used in the terminal output",
+)
+@click.option(
+    "--terminal-color/--no-terminal-color",
+    default=True,
+    help="if set, terminal output is colorful",
+)
 @click.argument("url", callback=validate_url)
 @click.argument("drone-api-token", callback=validate_drone_api)
-def drone_notifier(names, url, drone_api_token, balloon, delay, terminal_unicode, terminal_color):
-    base_url, link = url
+def drone_notifier(
+    names, url, drone_api_token, balloon, delay, terminal_unicode, terminal_color
+):
+    headers = {"Authorization": f"Bearer {drone_api_token}"}
+    # get all registered repos
+    showed_text_error = False
+    while True:
+        try:
+            r = requests_retry_session().get(url + "/user/repos", headers=headers)
+            if r.status_code == 200:
+                repos_candidates = r.json()
+                break
+        except Exception:
+            if not showed_text_error:
+                showed_text_error = True
+                text = f"{get_time()} failed to connect to  {url} : {e}"
+                if terminal_color:
+                    text = colored(text, "red")
+                print(text)
+            continue
+    if len(repos_candidates) == 0:
+        raise RuntimeError(f"No repositories found on `{url}`")
+
+    # get only active repos (last build younger than 30 days)
+    print(f'{get_time()} Checking {len(repos_candidates)} repositories for activity (last 30 days)')
+    repo = repos_candidates.pop()
+    repos = []
+    showed_text_error = False
+    while True:
+        try:
+            r = requests_retry_session().get(
+                f'{url}/repos/{repo["full_name"]}/builds', headers=headers
+            )
+            assert r.status_code == 200
+
+            showed_text_error = False
+
+            builds = r.json()
+
+            if len(builds) == 0:
+                repos.append(repo)
+                if repos_candidates:
+                    repo = repos_candidates.pop()
+                    continue
+                else:
+                    break
+
+            latest_build = builds[0]
+            diff_days = (time.time() - latest_build["created_at"]) / (24 * 3600)
+            if diff_days <= 30:
+                repos.append(repo)
+
+            if repos_candidates:
+                repo = repos_candidates.pop()
+            else:
+                break
+        except Exception:
+            if not showed_text_error:
+                showed_text_error = True
+                text = f"{get_time()} failed to connect to  {url} : {e}"
+                if terminal_color:
+                    text = colored(text, "red")
+                print(text)
+
+    if len(repos) == 0:
+        raise RuntimeError(f"No active repositories found on `{url}`")
+    print(f'{get_time()} Active repositories found:', [repo["full_name"] for repo in repos])
 
     # saving state builds
     old_my_builds = []
 
-    skip_sleep = True
+    skipped_first_sleep = False
     showed_text_success = False
     showed_text_error = False
     while True:
-        if skip_sleep:
-            skip_sleep = False
-        else:
+        # start quickly on start-up
+        if skipped_first_sleep:
             time.sleep(delay)
+        skipped_first_sleep = True
 
-        # fetch info from drone api
-        api_url = "{}/builds".format(base_url)
-        headers = {"Authorization": f"Bearer {drone_api_token}"}
-        try:
-            r = requests_retry_session().get(api_url, headers=headers)
-        except Exception as e:
-            if not showed_text_error:
-                showed_text_error = True
-                text = f"{get_time()} failed to connect to  {base_url} : {e}"
-                if terminal_color:
-                    text = colored(text, "red")
-                print(text)
-            continue
+        # get all builds from all repos
+        all_builds = []
+        for repo in repos:
+            # fetch info from drone api
+            showed_text_error = False
+            while True:
+                try:
+                    r = requests_retry_session().get(
+                        f'{url}/repos/{repo["full_name"]}/builds', headers=headers
+                    )
+                    assert r.status_code == 200
+                    build_dicts = r.json()
+                    all_builds.extend([Build(b) for b in build_dicts])
+                    break
+                except Exception as e:
+                    if not showed_text_error:
+                        showed_text_error = True
+                        text = f"{get_time()} failed to connect to  {url} : {e}"
+                        if terminal_color:
+                            text = colored(text, "red")
+                        print(text)
+                    continue
 
-        if r.status_code != 200:
-            if not showed_text_error:
-                showed_text_error = True
-                text = f"{get_time()} error code #{r.status_code} from drone api: {r.reason}"
-                if terminal_color:
-                    text = colored(text, "red")
-                print(text)
-            continue
-
-        try:
-            builds = r.json()
-        except:
-            continue
-
-        all_builds = [Build(b) for b in builds]
-        my_builds: List[Build] = [b for b in all_builds if b.author in names] if names else all_builds
+        my_builds: List[Build] = [
+            b for b in all_builds if b.author in names
+        ] if names else all_builds
 
         if not showed_text_success:
             showed_text_success = True
             if names:
                 names_segment = f", {len(my_builds)} are related to {names}"
             else:
-                names_segment = ", triggering on all builds (consinder the --names option)"
-            text = f"{get_time()} got information for {len(builds)} builds from {base_url}{names_segment}"
+                names_segment = (
+                    ", triggering on all builds (consinder the --names option)"
+                )
+            text = f"{get_time()} got information for {len(all_builds)} builds from {url}{names_segment}"
             if terminal_color:
                 text = colored(text, "green")
             print(text)
 
         # detect new elements that are pending or running
         for new_build in my_builds:
-            if new_build not in old_my_builds and new_build.status in [Build.state.pending, Build.state.running]:
+            if new_build not in old_my_builds and new_build.status in [
+                Build.state.pending,
+                Build.state.running,
+            ]:
                 notify(new_build, link, balloon, terminal_unicode, terminal_color)
 
         # detect status change
