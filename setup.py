@@ -6,7 +6,7 @@ with open("README.md", "r") as fh:
 setup(
     name="dronedesktopnotifier",
     packages=["dronedesktopnotifier"],
-    version="0.3",
+    version="0.4",
     license="GNU GPLv3",
     description="Get notified on your desktop when your drone.io build finishes.",
     long_description=long_description,
@@ -14,7 +14,7 @@ setup(
     author="Alexander Jahn",
     author_email="jahn.alexander@gmail.com",
     url="https://github.com/AlxndrJhn/drone-desktop-notifier",
-    download_url="https://github.com/AlxndrJhn/drone-desktop-notifier/archive/0.3.tar.gz",
+    download_url="https://github.com/AlxndrJhn/drone-desktop-notifier/archive/0.4.tar.gz",
     keywords=["drone.io", "notification", "drone", "notifier"],
     install_requires=["requests", "urllib3", "termcolor", "validators", "click", "plyer"],
     classifiers=[

@@ -32,6 +32,7 @@ class Build:
         success = 3
         pending = 4
         cancelled = 5
+        error = 6
 
     def __init__(self, *initial_data, **kwargs):
         for dictionary in initial_data:
