@@ -50,17 +50,20 @@ class Build:
             return False
         return getattr(self, "id") == value.id
 
+    def get_link(self):
+        return f'{self.api_url[:-3]}{self.repo_full_name}/{self.number}'
+
 
 def get_time():
     return datetime.datetime.now().strftime("%a %H:%M:%S")
 
 
 def notify(
-    build: Build, link: str, balloon: bool, terminal_unicode: bool, terminal_color: bool
+    build: Build, balloon: bool, terminal_unicode: bool, terminal_color: bool
 ) -> None:
     if build is None:
         return
-
+    link = build.get_link()
     icon = None
     if build.status == Build.state.failure:
         icon = f"{__package__}\icons\state_failed.ico"
@@ -83,7 +86,7 @@ def notify(
         s = ""
 
     timestamp = get_time()
-    text = f"{timestamp} {s}  `{build.status.name}` {link}{build.number} `{build.message}` {build.link_url} ({build.author})"
+    text = f"{timestamp} {s}  `{build.status.name}` {link} `{build.message}` {build.link_url} ({build.author})"
 
     if terminal_color:
         text = colored(text, color)
@@ -99,7 +102,7 @@ def notify(
         notify_mac(
             title=f"{build.status.name} ",
             message=f"{build.message} ({build.author})",
-            link=f"{link}{build.number}",
+            link=f"{link}",
             icon=icon,
         )
     elif platform.system() == "Windows":
@@ -264,7 +267,7 @@ def drone_notifier(
                     )
                     assert r.status_code == 200
                     build_dicts = r.json()
-                    all_builds.extend([Build(b) for b in build_dicts])
+                    all_builds.extend([Build(b, repo_full_name=repo["full_name"], api_url=url) for b in build_dicts])
                     break
                 except Exception as e:
                     if not showed_text_error:
@@ -298,7 +301,7 @@ def drone_notifier(
                 Build.state.pending,
                 Build.state.running,
             ]:
-                notify(new_build, link, balloon, terminal_unicode, terminal_color)
+                notify(new_build, balloon, terminal_unicode, terminal_color)
 
         # detect status change
         for old_build in old_my_builds:
@@ -306,7 +309,7 @@ def drone_notifier(
                 continue
             new_build = my_builds[my_builds.index(old_build)]
             if new_build.status != old_build.status:
-                notify(new_build, link, balloon, terminal_unicode, terminal_color)
+                notify(new_build, balloon, terminal_unicode, terminal_color)
 
         old_my_builds = my_builds
 
